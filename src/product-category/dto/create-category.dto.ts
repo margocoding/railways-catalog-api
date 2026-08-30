@@ -12,9 +12,6 @@ export class CreateCategoryDto {
   @IsString()
   description!: string;
 
-  @IsString()
-  image!: string;
-
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })

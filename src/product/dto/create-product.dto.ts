@@ -1,4 +1,3 @@
-// src/product/dto/create-product.dto.ts
 import {
   IsString,
   IsNumber,
@@ -9,12 +8,9 @@ import {
   IsIn,
   Min,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type, plainToInstance } from 'class-transformer';
 
 export class CreateProductSpecDto {
-  @IsString()
-  id!: string;
-
   @IsString()
   label!: string;
 
@@ -22,6 +18,11 @@ export class CreateProductSpecDto {
   @IsString()
   unit?: string;
 
+  @IsOptional()
+  @Transform(({ value }) => {
+    const num = Number(value);
+    return !isNaN(num) && String(value).trim() !== '' ? num : value;
+  })
   value!: number | string;
 }
 
@@ -35,27 +36,22 @@ export class CreateProductDto {
   @IsString()
   slug!: string;
 
+  @IsOptional()
   @IsString()
-  gost!: string;
+  gost?: string;
 
+  @Transform(({ value }) => Number(value))
   @IsNumber()
   @Min(0)
   price!: number;
 
-  @IsOptional()
-  @IsBoolean()
-  priceOnRequest?: boolean;
-
+  @Transform(({ value }) => Number(value))
   @IsNumber()
   @Min(0)
   stock!: number;
 
   @IsIn(['new', 'used', 'service'])
   condition!: 'new' | 'used' | 'service';
-
-  @IsArray()
-  @IsString({ each: true })
-  images!: string[];
 
   @IsString()
   categorySlug!: string;
@@ -68,12 +64,30 @@ export class CreateProductDto {
   @IsString()
   description?: string;
 
+  @Transform(({ value }) => {
+    if (typeof value !== 'string') return value;
+    try {
+      const parsed = JSON.parse(value);
+      if (!Array.isArray(parsed)) return parsed;
+      return parsed.map((item: any) => plainToInstance(CreateProductSpecDto, item));
+    } catch {
+      return value;
+    }
+  })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateProductSpecDto)
   specs?: CreateProductSpecDto[];
 
+  @Transform(({ value }) => {
+    if (typeof value !== 'string') return value;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
+  })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
