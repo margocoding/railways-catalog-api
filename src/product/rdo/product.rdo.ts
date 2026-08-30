@@ -1,5 +1,7 @@
 import { Expose, Type } from 'class-transformer';
 import { ProductSpecRdo } from './product-spec.rdo';
+import { CategoryRdo } from 'src/product-category/rdo/category.rdo';
+import { SubcategoryRdo } from 'src/product-subcategory/rdo/subcategory.rdo';
 
 export class ProductRdo {
   @Expose()
@@ -37,6 +39,12 @@ export class ProductRdo {
 
   @Expose()
   subcategorySlug?: string;
+
+  @Expose()
+  category?: CategoryRdo;
+
+  @Expose()
+  subcategory?: SubcategoryRdo;
 
   @Expose()
   description?: string;

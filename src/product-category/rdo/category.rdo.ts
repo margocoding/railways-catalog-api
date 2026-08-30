@@ -1,4 +1,5 @@
 import { Expose, Type } from 'class-transformer';
+import { SubcategoryRdo } from 'src/product-subcategory/rdo/subcategory.rdo';
 import { FilterOptionRdo } from 'utils/rdo/filter-option.rdo';
 
 export class CategoryRdo {
@@ -20,4 +21,8 @@ export class CategoryRdo {
   @Expose()
   @Type(() => FilterOptionRdo)
   filters?: FilterOptionRdo[];
+
+  @Expose()
+  @Type(() => SubcategoryRdo)
+  subcategories?: SubcategoryRdo[];
 }

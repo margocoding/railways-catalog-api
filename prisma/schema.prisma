@@ -1,7 +1,7 @@
 generator client {
-  provider      = "prisma-client"
-  output        = "../generated/prisma"
-  moduleFormat  = "cjs"
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
@@ -19,39 +19,47 @@ enum FilterType {
   RANGE
 }
 
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  COMPLETED
+  CANCELLED
+}
+
 model Category {
-  id            String        @id @default(cuid())
-  name          String
-  slug          String        @unique
-  description   String
-  image         String
-  
+  id          String @id @default(cuid())
+  name        String
+  slug        String @unique
+  description String
+  image       String
+
   subcategories Subcategory[]
   products      Product[]
   filters       FilterOption[]
 }
 
 model Subcategory {
-  id            String        @id @default(cuid())
-  name          String
-  slug          String        @unique
-  categoryId    String
-  category      Category      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  
-  products      Product[]
-  filters       FilterOption[]
+  id         String   @id @default(cuid())
+  name       String
+  slug       String   @unique
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  products Product[]
+  filters  FilterOption[]
 }
 
 model FilterOption {
-  id            String     @id @default(cuid())
-  key           String
-  label         String
-  type          FilterType @default(SELECT)
-  options       Json?      // Храним массив { value: string, label: string } как JSON
-      
-  categoryId    String?
-  category      Category?  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  
+  id      String     @id @default(cuid())
+  key     String
+  label   String
+  type    FilterType @default(SELECT)
+  options Json? // Храним массив { value: string, label: string } как JSON
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
   subcategoryId String?
   subcategory   Subcategory? @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
 }
@@ -62,32 +70,118 @@ model Product {
   title          String
   slug           String           @unique
   gost           String?
-  price          Float
-  priceOnRequest Boolean          @default(false)
+  price          Float?
   stock          Int              @default(0)
   condition      ProductCondition @default(NEW)
-  images         String[]         // PostgreSQL array
+  images         String[]
   description    String?
   analogues      String[]
-  
-  categoryId     String
-  category       Category         @relation(fields: [categoryId], references: [id])
-  
-  subcategoryId  String?
-  subcategory    Subcategory?     @relation(fields: [subcategoryId], references: [id])
-  
-  specs          ProductSpec[]
-  
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  subcategoryId String?
+  subcategory   Subcategory? @relation(fields: [subcategoryId], references: [id])
+
+  specs      ProductSpec[]
+  requests   Request[]
+  orderItems OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ProductSpec {
-  id        String  @id @default(cuid())
-  value     String 
-  unit      String?
-  label     String
-  
+  id    String  @id @default(cuid())
+  value String
+  unit  String?
+  label String
+
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Service {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  title           String
+  description     String
+  fullDescription String?
+  features        String[]
+  image           String?
+
+  requests Request[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Request {
+  id              String  @id @default(cuid())
+  name            String
+  phone           String
+  email           String?
+  comment         String?
+  policyAccepted  Boolean @default(false)
+  requestFilePath String?
+  partnerMapPath  String?
+
+  serviceId String?
+  service   Service? @relation(fields: [serviceId], references: [id])
+
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id          String @id @default(cuid())
+  orderNumber String @unique
+
+  name           String
+  phone          String
+  email          String?
+  address        String?
+  comment        String?
+  policyAccepted Boolean @default(false)
+
+  status      OrderStatus @default(PENDING)
+  totalAmount Float
+
+  items OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model OrderItem {
+  id       String @id @default(cuid())
+  quantity Int
+  price    Float
+
+  productTitle String
+  productSku   String
+  productSlug  String
+  productImage String?
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  password     String
+  role         String   @default("admin")
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
