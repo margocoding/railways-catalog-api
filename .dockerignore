@@ -1,0 +1,76 @@
+# Зависимости
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Сборка и временные файлы
+dist
+build
+coverage
+.nyc_output
+.tmp
+*.tmp
+
+# Файлы окружения
+.env
+.env.local
+.env.*.local
+*.env
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Иде и редакторы
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Логи
+logs
+*.log
+
+# Тесты
+test
+__tests__
+*.spec.ts
+*.test.ts
+jest.config.js
+jest-e2e.json
+*.spec.js
+*.test.js
+
+# Документация
+README.md
+CHANGELOG.md
+CONTRIBUTING.md
+docs
+
+# CI/CD
+.github
+.gitlab
+circle.yml
+.travis.yml
+.drone.yml
+
+# Другие системные файлы
+.terraform
+*.tfstate
+*.tfstate.*
+*.pem
+*.key
+*.crt
+*.csr
+.ssh
+
+# Prisma (генерируется внутри контейнера)
+prisma/*.db
+prisma/*.sqlite
+prisma/migrations/*.sqlite
+prisma/dev.db
+prisma/test.db
