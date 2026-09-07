@@ -136,6 +136,27 @@ export class ProductService {
   ): any {
     const where: any = {};
 
+    if (
+      query.priceMin !== undefined &&
+      query.priceMax !== undefined &&
+      query.priceMin > query.priceMax
+    ) {
+      throw new BadRequestException(
+        'Minimum price must not exceed maximum price',
+      );
+    }
+
+    if (query.gost?.trim()) {
+      where.gost = { contains: query.gost.trim(), mode: 'insensitive' };
+    }
+
+    if (query.priceMin !== undefined || query.priceMax !== undefined) {
+      where.price = {
+        ...(query.priceMin !== undefined ? { gte: query.priceMin } : {}),
+        ...(query.priceMax !== undefined ? { lte: query.priceMax } : {}),
+      };
+    }
+
     if (query.categorySlug) {
       where.category = { slug: query.categorySlug };
     }

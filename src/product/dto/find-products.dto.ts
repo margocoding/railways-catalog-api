@@ -1,4 +1,5 @@
-import { IsOptional, IsString, IsIn } from 'class-validator';
+import { IsOptional, IsString, IsIn, IsNumber, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 import { PaginationDto } from 'utils/dto/pagination.dto';
 
 export const PRODUCT_SORT_VALUES = [
@@ -29,6 +30,22 @@ export class FindProductsDto extends PaginationDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @IsOptional()
+  @IsString()
+  gost?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  priceMin?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  priceMax?: number;
 
   @IsOptional()
   @IsIn(PRODUCT_SORT_VALUES)

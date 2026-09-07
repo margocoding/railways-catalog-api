@@ -24,6 +24,7 @@ export class ProductCategoryService {
       slug: c.slug,
       description: c.description,
       image: c.image,
+      productCount: c._count?.products,
       filters:
         c.filters?.map((f: any) => ({
           key: f.key,
@@ -53,6 +54,7 @@ export class ProductCategoryService {
     const [categories, total] = await Promise.all([
       this.prisma.category.findMany({
         include: {
+          _count: { select: { products: true } },
           filters: true,
           subcategories: {
             include: { filters: true },
