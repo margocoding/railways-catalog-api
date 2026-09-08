@@ -18,7 +18,9 @@ export class FileService {
   async saveFile(file: Express.Multer.File): Promise<string> {
     await this.ensureUploadDir();
 
-    const fileExtension = file.originalname.split('.').pop() || 'jpg';
+    const fileExtension =
+      file.originalname.match(/\.([a-z0-9]{1,10})$/i)?.[1].toLowerCase() ||
+      'bin';
     const fileName = `${randomUUID()}.${fileExtension}`;
     const filePath = join(UPLOAD_DIR, fileName);
 
@@ -31,7 +33,7 @@ export class FileService {
   }
 
   async deleteFile(filePath: string): Promise<void> {
-    if (!filePath || !filePath.startsWith('/uploads/')) {
+    if (!filePath || !/^\/uploads\/[a-z0-9][a-z0-9._-]*$/i.test(filePath)) {
       return;
     }
 

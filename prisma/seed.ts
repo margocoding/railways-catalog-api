@@ -81,6 +81,7 @@ function readCatalog(): Catalog {
 
 async function main() {
   const catalog = readCatalog()
+  const descriptions = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'prisma/category-descriptions.json'), 'utf8')) as Record<string, string>
 
   console.log('Starting catalog import...')
   console.log(`Categories: ${catalog.categories.length}`)
@@ -131,14 +132,14 @@ async function main() {
         update: {
           name: category.name,
           slug: category.slug,
-          description: category.description,
+          description: descriptions[category.slug] ?? category.description,
           image: category.image ?? '',
         },
         create: {
           id: category.id,
           name: category.name,
           slug: category.slug,
-          description: category.description,
+          description: descriptions[category.slug] ?? category.description,
           image: category.image ?? '',
         },
       })

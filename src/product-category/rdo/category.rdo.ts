@@ -19,6 +19,9 @@ export class CategoryRdo {
   image!: string;
 
   @Expose()
+  productCount?: number;
+
+  @Expose()
   @Type(() => FilterOptionRdo)
   filters?: FilterOptionRdo[];
 

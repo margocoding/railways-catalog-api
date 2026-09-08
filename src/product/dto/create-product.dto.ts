@@ -1,7 +1,6 @@
 import {
   IsString,
   IsNumber,
-  IsBoolean,
   IsOptional,
   IsArray,
   ValidateNested,
@@ -40,10 +39,13 @@ export class CreateProductDto {
   @IsString()
   gost?: string;
 
-  @Transform(({ value }) => Number(value))
+  @IsOptional()
+  @Transform(({ value }) =>
+    value === 'null' || value === null ? null : Number(value),
+  )
   @IsNumber()
   @Min(0)
-  price!: number;
+  price?: number | null;
 
   @Transform(({ value }) => Number(value))
   @IsNumber()
@@ -69,7 +71,9 @@ export class CreateProductDto {
     try {
       const parsed = JSON.parse(value);
       if (!Array.isArray(parsed)) return parsed;
-      return parsed.map((item: any) => plainToInstance(CreateProductSpecDto, item));
+      return parsed.map((item: any) =>
+        plainToInstance(CreateProductSpecDto, item),
+      );
     } catch {
       return value;
     }

@@ -1,5 +1,10 @@
 // src/product/product.service.ts
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import { buildPagination } from 'utils/build-pagination.util';
 import { fillDto } from 'utils/fill-dto';
@@ -135,6 +140,27 @@ export class ProductService {
     attributes: Record<string, string>,
   ): any {
     const where: any = {};
+
+    if (
+      query.priceMin !== undefined &&
+      query.priceMax !== undefined &&
+      query.priceMin > query.priceMax
+    ) {
+      throw new BadRequestException(
+        'Minimum price must not exceed maximum price',
+      );
+    }
+
+    if (query.gost?.trim()) {
+      where.gost = { contains: query.gost.trim(), mode: 'insensitive' };
+    }
+
+    if (query.priceMin !== undefined || query.priceMax !== undefined) {
+      where.price = {
+        ...(query.priceMin !== undefined ? { gte: query.priceMin } : {}),
+        ...(query.priceMax !== undefined ? { lte: query.priceMax } : {}),
+      };
+    }
 
     if (query.categorySlug) {
       where.category = { slug: query.categorySlug };
@@ -278,37 +304,51 @@ export class ProductService {
       subcategoryId = subcategory.id;
     }
 
-    const savedImages = await Promise.all(
-      files.map((file) => this.fileService.saveFile(file)),
-    );
-
-    const product = await this.prisma.product.create({
-      data: {
-        sku: dto.sku,
-        title: dto.title,
-        slug: dto.slug,
-        gost: dto.gost,
-        price: dto.price,
-        stock: dto.stock,
-        condition: dto.condition.toUpperCase() as any,
-        images: savedImages,
-        description: dto.description,
-        analogues: dto.analogues,
-        categoryId: category.id,
-        subcategoryId,
-        specs: {
-          create:
-            dto.specs?.map((s) => ({
-              value: String(s.value),
-              unit: s.unit,
-              label: s.label,
-            })) ?? [],
+    const savedImages = await this.saveImages(files);
+    try {
+      const product = await this.prisma.product.create({
+        data: {
+          sku: dto.sku,
+          title: dto.title,
+          slug: dto.slug,
+          gost: dto.gost,
+          price: dto.price ?? null,
+          stock: dto.stock,
+          condition: dto.condition.toUpperCase() as any,
+          images: savedImages,
+          description: dto.description,
+          analogues: dto.analogues,
+          categoryId: category.id,
+          subcategoryId,
+          specs: {
+            create:
+              dto.specs?.map((s) => ({
+                value: String(s.value),
+                unit: s.unit,
+                label: s.label,
+              })) ?? [],
+          },
         },
-      },
-      include: { category: true, subcategory: true, specs: true },
-    });
+        include: { category: true, subcategory: true, specs: true },
+      });
 
-    return fillDto(ProductRdo, this.mapProductToDto(product));
+      return fillDto(ProductRdo, this.mapProductToDto(product));
+    } catch (error) {
+      await this.fileService.deleteFiles(savedImages);
+      throw error;
+    }
+  }
+
+  private async saveImages(files: Express.Multer.File[]): Promise<string[]> {
+    const saved: string[] = [];
+    try {
+      for (const file of files)
+        saved.push(await this.fileService.saveFile(file));
+      return saved;
+    } catch (error) {
+      await this.fileService.deleteFiles(saved);
+      throw error;
+    }
   }
 
   async update(
@@ -330,13 +370,17 @@ export class ProductService {
 
     const data: ProductUpdateInput = {};
 
-    if (files.length > 0) {
-      await this.fileService.deleteFiles(existing.images);
-
-      const savedImages = await Promise.all(
-        files.map((file) => this.fileService.saveFile(file)),
+    const retainedImages = dto.retainedImages ?? existing.images;
+    if (retainedImages.some((image) => !existing.images.includes(image))) {
+      throw new BadRequestException('Изображение не принадлежит этому товару');
+    }
+    if (
+      new Set(retainedImages).size !== retainedImages.length ||
+      retainedImages.length + files.length > 10
+    ) {
+      throw new BadRequestException(
+        'У товара может быть не более 10 различных изображений',
       );
-      data.images = savedImages;
     }
 
     if (dto.sku !== undefined) data.sku = dto.sku;
@@ -352,6 +396,7 @@ export class ProductService {
       data.condition = dto.condition.toUpperCase() as any;
     }
 
+    let categoryId = existing.categoryId;
     if (dto.categorySlug) {
       const category = await this.prisma.category.findUnique({
         where: { slug: dto.categorySlug },
@@ -362,14 +407,15 @@ export class ProductService {
       }
 
       data.category = { connect: { id: category.id } };
+      categoryId = category.id;
     }
 
     if (dto.subcategorySlug !== undefined) {
-      if (dto.subcategorySlug === null) {
+      if (!dto.subcategorySlug) {
         data.subcategory = { disconnect: true };
       } else if (dto.subcategorySlug) {
         const subcategory = await this.prisma.subcategory.findFirst({
-          where: { slug: dto.subcategorySlug },
+          where: { slug: dto.subcategorySlug, categoryId },
         });
 
         if (!subcategory) {
@@ -378,12 +424,13 @@ export class ProductService {
 
         data.subcategory = { connect: { id: subcategory.id } };
       }
+    } else if (categoryId !== existing.categoryId) {
+      data.subcategory = { disconnect: true };
     }
 
-    if (dto.specs) {
-      await this.prisma.productSpec.deleteMany({ where: { productId: id } });
-
+    if (dto.specs !== undefined) {
       data.specs = {
+        deleteMany: {},
         create: dto.specs.map((s) => ({
           value: String(s.value),
           unit: s.unit,
@@ -392,11 +439,33 @@ export class ProductService {
       };
     }
 
-    const product = await this.prisma.product.update({
-      where: { id },
-      data,
-      include: { category: true, subcategory: true, specs: true },
-    });
+    const savedImages = await this.saveImages(files);
+    if (dto.retainedImages !== undefined || savedImages.length) {
+      data.images = [...retainedImages, ...savedImages];
+    }
+    let product;
+    try {
+      product = await this.prisma.product.update({
+        where: {
+          id,
+          updatedAt: existing.updatedAt,
+          images: { equals: existing.images },
+        },
+        data,
+        include: { category: true, subcategory: true, specs: true },
+      });
+    } catch (error) {
+      await this.fileService.deleteFiles(savedImages);
+      if (error?.code === 'P2025') {
+        throw new ConflictException(
+          'Товар уже изменён. Обновите страницу и повторите сохранение.',
+        );
+      }
+      throw error;
+    }
+    await this.fileService.deleteFiles(
+      existing.images.filter((image) => !retainedImages.includes(image)),
+    );
 
     return fillDto(ProductRdo, this.mapProductToDto(product));
   }
@@ -408,8 +477,7 @@ export class ProductService {
       throw new NotFoundException('Product not found');
     }
 
-    await this.fileService.deleteFiles(product.images);
-
     await this.prisma.product.delete({ where: { id } });
+    await this.fileService.deleteFiles(product.images);
   }
 }
