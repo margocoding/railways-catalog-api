@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { ValidationPipe } from '@nestjs/common';
+import { RequestMethod, ValidationPipe } from '@nestjs/common';
 import { join } from 'path';
 import { AppModule } from './app.module';
 
@@ -11,7 +11,13 @@ async function bootstrap() {
     prefix: '/uploads',
   });
 
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api', {
+    exclude: [
+      { path: 'sitemap.xml', method: RequestMethod.GET },
+      { path: 'sitemaps/:part.xml', method: RequestMethod.GET },
+      { path: 'robots.txt', method: RequestMethod.GET },
+    ],
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({

@@ -8,9 +8,21 @@ import { ServiceModule } from './service/service.module';
 import { OrderModule } from './order/order.module';
 import { StatsModule } from './stats/stats.module';
 import { AuthModule } from './auth/auth.module';
+import { SeoModule } from './seo/seo.module';
 
 @Module({
-  imports: [ProductModule, ProductCategoryModule, ProductSubcategoryModule, FileModule, ServiceModule, RequestModule, OrderModule, StatsModule, AuthModule],
+  imports: [
+    ProductModule,
+    ProductCategoryModule,
+    ProductSubcategoryModule,
+    FileModule,
+    ServiceModule,
+    RequestModule,
+    OrderModule,
+    StatsModule,
+    AuthModule,
+    SeoModule,
+  ],
   controllers: [],
   providers: [],
 })
