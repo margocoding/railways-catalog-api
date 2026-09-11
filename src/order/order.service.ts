@@ -143,24 +143,16 @@ export class OrderService {
 
     const productsMap = new Map(products.map((p) => [p.id, p]));
 
+    // Остаток на складе заказ не ограничивает: у почти всех позиций каталога
+    // он равен единице, то есть это заполнитель, а не настоящий склад.
+    // Материалы ВСП берут сотнями, а корзина на сайте — запрос спецификации:
+    // наличие и срок подтверждает менеджер, а не проверка при оформлении.
     for (const item of dto.items) {
       const product = productsMap.get(item.productId)!;
 
       if (item.quantity <= 0) {
         throw new BadRequestException(
           `Количество товара "${product.title}" должно быть больше нуля`,
-        );
-      }
-
-      if (product.stock <= 0) {
-        throw new BadRequestException(
-          `Товар "${product.title}" отсутствует в наличии`,
-        );
-      }
-
-      if (item.quantity > product.stock) {
-        throw new BadRequestException(
-          `Недостаточно товара "${product.title}" на складе. Доступно: ${product.stock}, запрошено: ${item.quantity}`,
         );
       }
     }
