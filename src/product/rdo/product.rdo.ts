@@ -50,6 +50,9 @@ export class ProductRdo {
   description?: string;
 
   @Expose()
+  descriptionTags?: string | null;
+
+  @Expose()
   @Type(() => ProductSpecRdo)
   specs?: ProductSpecRdo[];
 

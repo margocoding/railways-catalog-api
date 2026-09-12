@@ -65,17 +65,18 @@ model FilterOption {
 }
 
 model Product {
-  id             String           @id @default(cuid())
-  sku            String           @unique
-  title          String
-  slug           String           @unique
-  gost           String?
-  price          Float?
-  stock          Int              @default(0)
-  condition      ProductCondition @default(NEW)
-  images         String[]
-  description    String?
-  analogues      String[]
+  id              String           @id @default(cuid())
+  sku             String           @unique
+  title           String
+  slug            String           @unique
+  gost            String?
+  price           Float?
+  stock           Int              @default(0)
+  condition       ProductCondition @default(NEW)
+  images          String[]
+  description     String?
+  descriptionTags String?
+  analogues       String[]
 
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])

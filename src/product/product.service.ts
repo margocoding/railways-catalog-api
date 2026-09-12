@@ -36,6 +36,7 @@ export class ProductService {
       condition: p.condition.toLowerCase(),
       images: p.images,
       description: p.description,
+      descriptionTags: p.descriptionTags,
       analogues: p.analogues,
       categorySlug: p.category?.slug,
       subcategorySlug: p.subcategory?.slug ?? undefined,
@@ -317,6 +318,7 @@ export class ProductService {
           condition: dto.condition.toUpperCase() as any,
           images: savedImages,
           description: dto.description,
+          descriptionTags: dto.descriptionTags?.trim() || null,
           analogues: dto.analogues,
           categoryId: category.id,
           subcategoryId,
@@ -390,6 +392,9 @@ export class ProductService {
     if (dto.price !== undefined) data.price = dto.price;
     if (dto.stock !== undefined) data.stock = dto.stock;
     if (dto.description !== undefined) data.description = dto.description;
+    if (dto.descriptionTags !== undefined) {
+      data.descriptionTags = dto.descriptionTags?.trim() || null;
+    }
     if (dto.analogues !== undefined) data.analogues = dto.analogues;
 
     if (dto.condition) {
