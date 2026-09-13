@@ -177,6 +177,7 @@ export class ProductService {
         { title: { contains: search, mode: 'insensitive' } },
         { sku: { contains: search, mode: 'insensitive' } },
         { gost: { contains: search, mode: 'insensitive' } },
+        { descriptionTags: { contains: search, mode: 'insensitive' } },
       ];
     }
 

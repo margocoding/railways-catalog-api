@@ -37,6 +37,8 @@ $ npm install
 
 Product create/update requests accept `descriptionTags` as a string. Leading and trailing whitespace is trimmed; an empty value or `null` clears the field. Omitting it from an update preserves the saved value. A missing value on creation is stored as `NULL`. The storefront falls back to its generated description when this field is empty.
 
+The product listing's `search` parameter also matches `descriptionTags`, alongside the title, SKU and GOST. Matching uses a case-insensitive substring and respects the selected filters and pagination. The storefront header search and catalog search use this same endpoint.
+
 Deploy the API before the updated storefront. With the target database configured in `DATABASE_URL`, run:
 
 ```sh
