@@ -19,6 +19,9 @@ export class CategoryRdo {
   image!: string;
 
   @Expose()
+  position!: number;
+
+  @Expose()
   productCount?: number;
 
   @Expose()

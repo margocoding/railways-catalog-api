@@ -33,6 +33,7 @@ model Category {
   slug        String @unique
   description String
   image       String
+  position    Int    @default(0)
 
   subcategories Subcategory[]
   products      Product[]
