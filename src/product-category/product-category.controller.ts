@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Patch,
   Query,
   HttpCode,
   UseInterceptors,
@@ -17,6 +18,7 @@ import { memoryStorage } from 'multer';
 import { ProductCategoryService } from './product-category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { ReorderCategoriesDto } from './dto/reorder-categories.dto';
 import { PaginationDto } from 'utils/dto/pagination.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
@@ -27,6 +29,13 @@ export class ProductCategoryController {
   @Get()
   findAll(@Query() pagination: PaginationDto) {
     return this.service.findAll(pagination);
+  }
+
+  // Объявлен до `:id`, иначе Nest примет «order» за идентификатор категории.
+  @Patch('order')
+  @UseGuards(JwtAuthGuard)
+  reorder(@Body() dto: ReorderCategoriesDto) {
+    return this.service.reorder(dto.ids);
   }
 
   @Get(':id')

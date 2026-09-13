@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import { PaginationDto } from 'utils/dto/pagination.dto';
 import { buildPagination } from 'utils/build-pagination.util';
@@ -24,6 +28,7 @@ export class ProductCategoryService {
       slug: c.slug,
       description: c.description,
       image: c.image,
+      position: c.position,
       productCount: c._count?.products,
       filters:
         c.filters?.map((f: any) => ({
@@ -63,7 +68,7 @@ export class ProductCategoryService {
         },
         skip: pagination.skip,
         take: pagination.take,
-        orderBy: { name: 'asc' },
+        orderBy: [{ position: 'asc' }, { name: 'asc' }],
       }),
       this.prisma.category.count(),
     ]);
@@ -101,12 +106,18 @@ export class ProductCategoryService {
   ): Promise<CategoryRdo> {
     let imagePath: string = await this.fileService.saveFile(file);
 
+    // Новая категория встаёт в конец списка, а не в середину по алфавиту.
+    const last = await this.prisma.category.aggregate({
+      _max: { position: true },
+    });
+
     const category = await this.prisma.category.create({
       data: {
         name: dto.name,
         slug: dto.slug,
         description: dto.description,
         image: imagePath,
+        position: (last._max.position ?? 0) + 1,
         filters: {
           create: dto.filters?.map(mapFilterOptionToPrisma) ?? [],
         },
@@ -164,6 +175,51 @@ export class ProductCategoryService {
     });
 
     return fillDto(CategoryRdo, this.mapCategoryToDto(category));
+  }
+
+  /**
+   * Раскладывает категории в порядке переданных id: первая в списке становится
+   * первой в каталоге. Принимает только полный список, иначе часть категорий
+   * осталась бы с прежними номерами и порядок стал бы непредсказуемым.
+   */
+  async reorder(ids: string[]): Promise<CategoriesRdo> {
+    const unique = new Set(ids);
+
+    if (unique.size !== ids.length) {
+      throw new BadRequestException('Category ids must be unique');
+    }
+
+    const existing = await this.prisma.category.findMany({
+      select: { id: true },
+    });
+
+    if (existing.length !== ids.length) {
+      throw new BadRequestException(
+        `Expected all ${existing.length} categories, received ${ids.length}`,
+      );
+    }
+
+    const known = new Set(existing.map((category) => category.id));
+    const unknown = ids.find((id) => !known.has(id));
+
+    if (unknown) {
+      throw new NotFoundException(`Category not found: ${unknown}`);
+    }
+
+    await this.prisma.$transaction(
+      ids.map((id, index) =>
+        this.prisma.category.update({
+          where: { id },
+          data: { position: index + 1 },
+        }),
+      ),
+    );
+
+    const pagination = new PaginationDto();
+    pagination.page = 1;
+    pagination.limit = Math.min(Math.max(ids.length, 1), 100);
+
+    return this.findAll(pagination);
   }
 
   async delete(id: string): Promise<void> {
