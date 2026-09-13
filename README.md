@@ -31,6 +31,26 @@
 $ npm install
 ```
 
+## Product search description
+
+`Product.descriptionTags` is an optional text field used by the storefront for the product's `<meta name="description">`. The admin label is «Тэги для поиска». It is separate from the visible `description` and is returned with product data.
+
+Product create/update requests accept `descriptionTags` as a string. Leading and trailing whitespace is trimmed; an empty value or `null` clears the field. Omitting it from an update preserves the saved value. A missing value on creation is stored as `NULL`. The storefront falls back to its generated description when this field is empty.
+
+Deploy the API before the updated storefront. With the target database configured in `DATABASE_URL`, run:
+
+```sh
+npm ci
+npx prisma generate
+npm run build
+npx prisma migrate deploy
+npm run start:prod
+```
+
+Migration `20260912200000_product_description_tags` adds the nullable column without changing existing descriptions. The Docker build generates the client; the container startup applies migrations before starting the API.
+
+`npm run test:regression` covers field validation, creation, updates, clearing and preservation of existing product data.
+
 ## Compile and run the project
 
 ```bash
