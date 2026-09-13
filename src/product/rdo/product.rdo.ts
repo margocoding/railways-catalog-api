@@ -23,6 +23,9 @@ export class ProductRdo {
   price!: number;
 
   @Expose()
+  metaDescription?: string;
+
+  @Expose()
   priceOnRequest?: boolean;
 
   @Expose()

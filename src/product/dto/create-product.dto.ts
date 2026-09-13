@@ -66,6 +66,10 @@ export class CreateProductDto {
   @IsString()
   description?: string;
 
+  @IsOptional()
+  @IsString()
+  metaDescription?: string;
+
   @Transform(({ value }) => {
     if (typeof value !== 'string') return value;
     try {

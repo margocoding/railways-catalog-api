@@ -36,6 +36,7 @@ export class ProductService {
       condition: p.condition.toLowerCase(),
       images: p.images,
       description: p.description,
+      metaDescription: p.metaDescription,
       analogues: p.analogues,
       categorySlug: p.category?.slug,
       subcategorySlug: p.subcategory?.slug ?? undefined,
@@ -316,6 +317,7 @@ export class ProductService {
           stock: dto.stock,
           condition: dto.condition.toUpperCase() as any,
           images: savedImages,
+          metaDescription: dto.metaDescription,
           description: dto.description,
           analogues: dto.analogues,
           categoryId: category.id,
@@ -383,14 +385,15 @@ export class ProductService {
       );
     }
 
-    if (dto.sku !== undefined) data.sku = dto.sku;
-    if (dto.title !== undefined) data.title = dto.title;
-    if (dto.slug !== undefined) data.slug = dto.slug;
-    if (dto.gost !== undefined) data.gost = dto.gost;
-    if (dto.price !== undefined) data.price = dto.price;
-    if (dto.stock !== undefined) data.stock = dto.stock;
-    if (dto.description !== undefined) data.description = dto.description;
-    if (dto.analogues !== undefined) data.analogues = dto.analogues;
+    if (dto.sku) data.sku = dto.sku;
+    if (dto.title) data.title = dto.title;
+    if (dto.slug) data.slug = dto.slug;
+    if (dto.gost) data.gost = dto.gost;
+    if (dto.price) data.price = dto.price;
+    if (dto.stock) data.stock = dto.stock;
+    if (dto.description) data.description = dto.description;
+    if (dto.analogues) data.analogues = dto.analogues;
+    if (dto.metaDescription) data.metaDescription = dto.metaDescription
 
     if (dto.condition) {
       data.condition = dto.condition.toUpperCase() as any;

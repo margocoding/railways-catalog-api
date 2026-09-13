@@ -65,17 +65,18 @@ model FilterOption {
 }
 
 model Product {
-  id             String           @id @default(cuid())
-  sku            String           @unique
-  title          String
-  slug           String           @unique
-  gost           String?
-  price          Float?
-  stock          Int              @default(0)
-  condition      ProductCondition @default(NEW)
-  images         String[]
-  description    String?
-  analogues      String[]
+  id              String           @id @default(cuid())
+  sku             String           @unique
+  title           String
+  slug            String           @unique
+  gost            String?
+  price           Float?
+  stock           Int              @default(0)
+  condition       ProductCondition @default(NEW)
+  images          String[]
+  description     String?
+  analogues       String[]
+  metaDescription String?
 
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
@@ -177,11 +178,11 @@ model OrderItem {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  username     String   @unique
-  password     String
-  role         String   @default("admin")
-  
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id       String @id @default(cuid())
+  username String @unique
+  password String
+  role     String @default("admin")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
