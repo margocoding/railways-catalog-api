@@ -3,6 +3,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import { RequestMethod, ValidationPipe } from '@nestjs/common';
 import { join } from 'path';
 import { AppModule } from './app.module';
+import { MulterExceptionFilter } from './common/multer-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -29,6 +30,9 @@ async function bootstrap() {
       },
     }),
   );
+
+  // Ошибки загрузки файлов (лишний файл, неверное поле) — 400/413, а не 500.
+  app.useGlobalFilters(new MulterExceptionFilter());
 
   app.enableCors({
     origin: process.env.CORS_ORIGIN ?? '*',
