@@ -8,7 +8,7 @@ import { Transform } from 'class-transformer';
  * true или "true", всё прочее — отказом.
  */
 export const PolicyAcceptedTransform = () =>
-  Transform(({ obj, key }) => {
+  Transform(({ obj, key }: { obj: Record<string, unknown>; key: string }) => {
     const raw = obj[key];
     return raw === true || raw === 'true';
   });
