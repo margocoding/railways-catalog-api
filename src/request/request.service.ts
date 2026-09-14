@@ -7,6 +7,11 @@ import { FindRequestsDto, RequestSort } from './dto/find-requests.dto';
 import { RequestsRdo } from './rdo/requests.rdo';
 import { RequestRdo } from './rdo/request.rdo';
 import { FileService } from 'src/file/file.service';
+import type { Prisma } from 'generated/prisma/client';
+
+type RequestWithRelations = Prisma.RequestGetPayload<{
+  include: { service: true; product: true };
+}>;
 
 @Injectable()
 export class RequestService {
@@ -15,7 +20,7 @@ export class RequestService {
     private readonly fileService: FileService,
   ) {}
 
-  private mapRequestToDto(r: any) {
+  private mapRequestToDto(r: RequestWithRelations) {
     return {
       id: r.id,
       name: r.name,
@@ -31,11 +36,11 @@ export class RequestService {
             id: r.service.id,
             slug: r.service.slug,
             title: r.service.title,
-            icon: r.service.icon,
             description: r.service.description,
             fullDescription: r.service.fullDescription,
             features: r.service.features ?? [],
-            images: r.service.images ?? [],
+            // У модели Service нет поля images: в ответе оно всегда было пустым массивом.
+            images: [],
             createdAt: r.service.createdAt,
             updatedAt: r.service.updatedAt,
           }
@@ -49,7 +54,6 @@ export class RequestService {
             slug: r.product.slug,
             gost: r.product.gost,
             price: r.product.price,
-            priceOnRequest: r.product.priceOnRequest,
             stock: r.product.stock,
             condition: r.product.condition,
             images: r.product.images ?? [],
@@ -66,7 +70,9 @@ export class RequestService {
     };
   }
 
-  private buildOrderBy(sort?: RequestSort): any {
+  private buildOrderBy(
+    sort?: RequestSort,
+  ): Prisma.RequestOrderByWithRelationInput {
     switch (sort) {
       case 'oldest':
         return { createdAt: 'asc' };
@@ -76,8 +82,8 @@ export class RequestService {
     }
   }
 
-  private buildWhere(query: FindRequestsDto): any {
-    const where: any = {};
+  private buildWhere(query: FindRequestsDto): Prisma.RequestWhereInput {
+    const where: Prisma.RequestWhereInput = {};
 
     if (query.serviceId) {
       where.serviceId = query.serviceId;

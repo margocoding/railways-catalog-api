@@ -9,6 +9,7 @@ import { ServiceRdo } from './rdo/service.rdo';
 import { ServicesRdo } from './rdo/services.rdo';
 import { FileService } from 'src/file/file.service';
 import { ServiceUpdateInput } from 'generated/prisma/models';
+import type { Prisma } from 'generated/prisma/client';
 
 @Injectable()
 export class ServiceService {
@@ -17,12 +18,11 @@ export class ServiceService {
     private readonly fileService: FileService,
   ) {}
 
-  private mapServiceToDto(s: any) {
+  private mapServiceToDto(s: Prisma.ServiceGetPayload<object>) {
     return {
       id: s.id,
       slug: s.slug,
       title: s.title,
-      icon: s.icon,
       description: s.description,
       fullDescription: s.fullDescription,
       features: s.features ?? [],
@@ -32,7 +32,9 @@ export class ServiceService {
     };
   }
 
-  private buildOrderBy(sort?: ServiceSort): any {
+  private buildOrderBy(
+    sort?: ServiceSort,
+  ): Prisma.ServiceOrderByWithRelationInput {
     switch (sort) {
       case 'newest':
         return { createdAt: 'desc' };
@@ -42,8 +44,8 @@ export class ServiceService {
     }
   }
 
-  private buildWhere(query: FindServicesDto): any {
-    const where: any = {};
+  private buildWhere(query: FindServicesDto): Prisma.ServiceWhereInput {
+    const where: Prisma.ServiceWhereInput = {};
 
     if (query.search) {
       const search = query.search.trim();
