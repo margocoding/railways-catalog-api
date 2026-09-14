@@ -86,10 +86,7 @@ export class ProductSubcategoryService {
     return fillDto(SubcategoryRdo, this.mapSubcategoryToDto(subcategory));
   }
 
-  async update(
-    id: string,
-    dto: UpdateSubcategoryDto,
-  ): Promise<SubcategoryRdo> {
+  async update(id: string, dto: UpdateSubcategoryDto): Promise<SubcategoryRdo> {
     const existing = await this.prisma.subcategory.findUnique({
       where: { id },
     });

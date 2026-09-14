@@ -7,6 +7,6 @@ import { RequestController } from './request.controller';
 @Module({
   imports: [PrismaModule, FileModule],
   providers: [RequestService],
-  controllers: [RequestController]
+  controllers: [RequestController],
 })
 export class RequestModule {}

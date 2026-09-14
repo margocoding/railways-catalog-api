@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import { buildPagination } from 'utils/build-pagination.util';
 import { fillDto } from 'utils/fill-dto';
@@ -228,10 +232,7 @@ export class OrderService {
       include: { items: true },
     });
 
-    if (
-      dto.status === 'COMPLETED' &&
-      existing.status !== 'COMPLETED'
-    ) {
+    if (dto.status === 'COMPLETED' && existing.status !== 'COMPLETED') {
       await Promise.all(
         existing.items.map((item) =>
           this.prisma.product.update({

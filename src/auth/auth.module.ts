@@ -7,11 +7,14 @@ import { JwtStrategy } from './jwt.strategy';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Module({
-  imports: [PrismaModule, JwtModule.register({
-    secret: process.env.JWT_SECRET
-  })],
+  imports: [
+    PrismaModule,
+    JwtModule.register({
+      secret: process.env.JWT_SECRET,
+    }),
+  ],
   providers: [AuthService, JwtStrategy, JwtAuthGuard],
   controllers: [AuthController],
-  exports: [JwtAuthGuard]
+  exports: [JwtAuthGuard],
 })
 export class AuthModule {}

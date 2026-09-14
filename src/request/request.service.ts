@@ -107,7 +107,7 @@ export class RequestService {
     const [requests, total] = await Promise.all([
       this.prisma.request.findMany({
         where,
-        include: { 
+        include: {
           service: true,
           product: true,
         },
@@ -129,7 +129,7 @@ export class RequestService {
   async findOne(id: string): Promise<RequestRdo> {
     const request = await this.prisma.request.findUnique({
       where: { id },
-      include: { 
+      include: {
         service: true,
         product: true,
       },
@@ -190,7 +190,7 @@ export class RequestService {
         serviceId: dto.serviceId,
         productId: dto.productId,
       },
-      include: { 
+      include: {
         service: true,
         product: true,
       },
@@ -209,11 +209,11 @@ export class RequestService {
     }
 
     const filesToDelete: string[] = [];
-    
+
     if (request.requestFilePath) {
       filesToDelete.push(request.requestFilePath);
     }
-    
+
     if (request.partnerMapPath) {
       filesToDelete.push(request.partnerMapPath);
     }
