@@ -10,6 +10,7 @@ import {
 } from 'class-validator';
 import { plainToInstance, Transform, Type } from 'class-transformer';
 import { CreateOrderItemDto } from './create-order-item.dto';
+import { PolicyAcceptedTransform } from '../../common/policy-accepted.transform';
 
 export class CreateOrderDto {
   @IsString()
@@ -33,6 +34,7 @@ export class CreateOrderDto {
   @IsString()
   comment?: string;
 
+  @PolicyAcceptedTransform()
   @IsBoolean()
   @Equals(true, {
     message: 'Необходимо согласие с политикой конфиденциальности',

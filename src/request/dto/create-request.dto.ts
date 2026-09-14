@@ -1,4 +1,5 @@
 import { IsString, IsOptional, IsEmail, IsBoolean, Equals, Matches } from 'class-validator';
+import { PolicyAcceptedTransform } from '../../common/policy-accepted.transform';
 
 export class CreateRequestDto {
   @IsString()
@@ -18,6 +19,7 @@ export class CreateRequestDto {
   @IsString()
   comment?: string;
   
+  @PolicyAcceptedTransform()
   @IsBoolean()
   @Equals(true, { message: 'Необходимо согласие с политикой конфиденциальности' })
   policyAccepted!: boolean;
