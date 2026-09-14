@@ -1,0 +1,50 @@
+name: Ops server access
+
+# Служебный workflow после передачи репозитория (14.09.2026).
+# Запускается только пушем в ветку ops/server-access, main и выкатку не трогает.
+# Добавляет SSH-ключ владельца на сервер и показывает, какие образы тянет docker compose.
+# Лог публичный: значения из секретов не печатаются, переменные окружения compose не выводятся.
+
+on:
+  push:
+    branches:
+      - ops/server-access
+
+permissions:
+  contents: read
+
+jobs:
+  access:
+    name: Add owner SSH key and inspect compose
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            KEY='ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFpvYHNJChGot6WU6ZLWAscKzFyzo4dlQX+C+vGgOXpm traer-pavelzd16-2026-09-14'
+            mkdir -p ~/.ssh && chmod 700 ~/.ssh
+            touch ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys
+            grep -qxF "$KEY" ~/.ssh/authorized_keys || echo "$KEY" >> ~/.ssh/authorized_keys
+            echo "authorized_keys lines: $(grep -c . ~/.ssh/authorized_keys)"
+            echo "owner key present: $(grep -cxF "$KEY" ~/.ssh/authorized_keys)"
+            echo "uid=$(id -u) groups=$(id -Gn | tr ' ' ',')"
+            echo "user_rev=$(whoami | rev)"
+            cd ${{ secrets.DEPLOY_PATH }}
+            echo "path_rev=$(pwd | rev)"
+            echo "--- files"
+            ls -la
+            echo "--- compose: services and images"
+            for f in docker-compose.yml docker-compose.yaml compose.yml compose.yaml; do
+              [ -f "$f" ] && echo "== $f" && grep -nE '^[a-z]+:\s*$|^  [A-Za-z0-9_.-]+:\s*$|^\s+(image|container_name|build):' "$f" || true
+            done
+            echo "--- containers"
+            docker ps -a --format '{{.Names}}\t{{.Image}}\t{{.Status}}'
+            echo "--- sshd"
+            (ss -ltn 2>/dev/null | grep -E ':22\s' || echo "no :22 listener seen")
+            (sudo -n ufw status 2>/dev/null || echo "ufw: no access or not installed") | head -20
