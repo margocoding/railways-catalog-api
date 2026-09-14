@@ -15,6 +15,35 @@ import { ProductRdo } from './rdo/product.rdo';
 import { ProductsRdo } from './rdo/products.rdo';
 import { FileService } from 'src/file/file.service';
 import { ProductUpdateInput } from 'generated/prisma/models';
+import type {
+  Category,
+  FilterOption,
+  Prisma,
+  Product,
+  ProductCondition,
+  ProductSpec,
+  Subcategory,
+} from 'generated/prisma/client';
+import { mapFilterOptionToRdo } from 'utils/mappers/filter-option.mapper';
+
+type ProductWithRelations = Product & {
+  category?: (Category & { filters?: FilterOption[] }) | null;
+  subcategory?: (Subcategory & { filters?: FilterOption[] }) | null;
+  specs?: ProductSpec[];
+};
+
+/** Товар в том составе, в каком его достают разные методы; похожие товары — только в карточке. */
+type ProductForRdo = ProductWithRelations & {
+  similarProducts?: ProductWithRelations[];
+};
+
+/** Числовое значение характеристики отдаём числом, остальное — строкой. */
+const mapSpecToRdo = (s: ProductSpec) => ({
+  id: s.id,
+  value: !isNaN(Number(s.value)) && s.value !== '' ? Number(s.value) : s.value,
+  unit: s.unit,
+  label: s.label,
+});
 
 @Injectable()
 export class ProductService {
@@ -23,15 +52,17 @@ export class ProductService {
     private readonly fileService: FileService,
   ) {}
 
-  private mapProductToDto(p: any, options: { includeSimilar?: boolean } = {}) {
-    const base: any = {
+  private mapProductToDto(
+    p: ProductForRdo,
+    options: { includeSimilar?: boolean } = {},
+  ) {
+    return {
       id: p.id,
       sku: p.sku,
       title: p.title,
       slug: p.slug,
       gost: p.gost,
       price: p.price,
-      priceOnRequest: p.priceOnRequest,
       stock: p.stock,
       condition: p.condition.toLowerCase(),
       images: p.images,
@@ -40,87 +71,53 @@ export class ProductService {
       analogues: p.analogues,
       categorySlug: p.category?.slug,
       subcategorySlug: p.subcategory?.slug ?? undefined,
-      category: p.category,
-      subcategory: p.subcategory,
-      specs:
-        p.specs?.map((s: any) => ({
-          id: s.id,
-          value:
-            !isNaN(Number(s.value)) && s.value !== ''
-              ? Number(s.value)
-              : s.value,
-          unit: s.unit,
-          label: s.label,
-        })) ?? [],
+      category: p.category
+        ? {
+            id: p.category.id,
+            name: p.category.name,
+            slug: p.category.slug,
+            description: p.category.description,
+            image: p.category.image,
+            filters: p.category.filters?.map(mapFilterOptionToRdo) ?? [],
+          }
+        : p.category,
+      subcategory: p.subcategory
+        ? {
+            id: p.subcategory.id,
+            name: p.subcategory.name,
+            slug: p.subcategory.slug,
+            categoryId: p.subcategory.categoryId,
+            categorySlug: p.category?.slug,
+            filters: p.subcategory.filters?.map(mapFilterOptionToRdo) ?? [],
+          }
+        : p.subcategory,
+      specs: p.specs?.map(mapSpecToRdo) ?? [],
+      ...(options.includeSimilar && p.similarProducts
+        ? {
+            similarProducts: p.similarProducts.map((sp) => ({
+              id: sp.id,
+              sku: sp.sku,
+              title: sp.title,
+              slug: sp.slug,
+              gost: sp.gost,
+              price: sp.price,
+              stock: sp.stock,
+              condition: sp.condition.toLowerCase(),
+              images: sp.images,
+              description: sp.description,
+              analogues: sp.analogues,
+              categorySlug: sp.category?.slug,
+              subcategorySlug: sp.subcategory?.slug ?? undefined,
+              specs: sp.specs?.map(mapSpecToRdo) ?? [],
+            })),
+          }
+        : {}),
     };
-
-    if (p.category) {
-      base.category = {
-        id: p.category.id,
-        name: p.category.name,
-        slug: p.category.slug,
-        description: p.category.description,
-        image: p.category.image,
-        filters:
-          p.category.filters?.map((f: any) => ({
-            key: f.key,
-            label: f.label,
-            type: f.type?.toLowerCase() as 'select' | 'range',
-            options: f.options as any,
-          })) ?? [],
-      };
-    }
-
-    if (p.subcategory) {
-      base.subcategory = {
-        id: p.subcategory.id,
-        name: p.subcategory.name,
-        slug: p.subcategory.slug,
-        categoryId: p.subcategory.categoryId,
-        categorySlug: p.category?.slug,
-        filters:
-          p.subcategory.filters?.map((f: any) => ({
-            key: f.key,
-            label: f.label,
-            type: f.type?.toLowerCase() as 'select' | 'range',
-            options: f.options as any,
-          })) ?? [],
-      };
-    }
-
-    if (options.includeSimilar && p.similarProducts) {
-      base.similarProducts = p.similarProducts.map((sp: any) => ({
-        id: sp.id,
-        sku: sp.sku,
-        title: sp.title,
-        slug: sp.slug,
-        gost: sp.gost,
-        price: sp.price,
-        priceOnRequest: sp.priceOnRequest,
-        stock: sp.stock,
-        condition: sp.condition.toLowerCase(),
-        images: sp.images,
-        description: sp.description,
-        analogues: sp.analogues,
-        categorySlug: sp.category?.slug,
-        subcategorySlug: sp.subcategory?.slug ?? undefined,
-        specs:
-          sp.specs?.map((s: any) => ({
-            id: s.specId,
-            value:
-              !isNaN(Number(s.value)) && s.value !== ''
-                ? Number(s.value)
-                : s.value,
-            unit: s.unit,
-            label: s.label,
-          })) ?? [],
-      }));
-    }
-
-    return base;
   }
 
-  private buildOrderBy(sort?: ProductSort): any {
+  private buildOrderBy(
+    sort?: ProductSort,
+  ): Prisma.ProductOrderByWithRelationInput {
     switch (sort) {
       case 'price-asc':
         return { price: 'asc' };
@@ -139,8 +136,8 @@ export class ProductService {
   private buildWhere(
     query: FindProductsDto,
     attributes: Record<string, string>,
-  ): any {
-    const where: any = {};
+  ): Prisma.ProductWhereInput {
+    const where: Prisma.ProductWhereInput = {};
 
     if (
       query.priceMin !== undefined &&
@@ -182,7 +179,7 @@ export class ProductService {
     }
 
     if (query.condition) {
-      where.condition = query.condition.toUpperCase();
+      where.condition = query.condition.toUpperCase() as ProductCondition;
     }
 
     if (query.stock === 'in-stock') {
@@ -316,7 +313,7 @@ export class ProductService {
           gost: dto.gost,
           price: dto.price ?? null,
           stock: dto.stock,
-          condition: dto.condition.toUpperCase() as any,
+          condition: dto.condition.toUpperCase() as ProductCondition,
           images: savedImages,
           description: dto.description,
           descriptionTags: dto.descriptionTags?.trim() || null,
@@ -399,7 +396,7 @@ export class ProductService {
     if (dto.analogues !== undefined) data.analogues = dto.analogues;
 
     if (dto.condition) {
-      data.condition = dto.condition.toUpperCase() as any;
+      data.condition = dto.condition.toUpperCase() as ProductCondition;
     }
 
     let categoryId = existing.categoryId;
@@ -449,7 +446,9 @@ export class ProductService {
     if (dto.retainedImages !== undefined || savedImages.length) {
       data.images = [...retainedImages, ...savedImages];
     }
-    let product;
+    let product: Prisma.ProductGetPayload<{
+      include: { category: true; subcategory: true; specs: true };
+    }>;
     try {
       product = await this.prisma.product.update({
         where: {
@@ -462,7 +461,8 @@ export class ProductService {
       });
     } catch (error) {
       await this.fileService.deleteFiles(savedImages);
-      if (error?.code === 'P2025') {
+      // P2025 — запись не найдена: товар успели изменить между чтением и сохранением.
+      if ((error as { code?: unknown } | null)?.code === 'P2025') {
         throw new ConflictException(
           'Товар уже изменён. Обновите страницу и повторите сохранение.',
         );
