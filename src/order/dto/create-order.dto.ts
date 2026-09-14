@@ -8,9 +8,10 @@ import {
   IsArray,
   ValidateNested,
 } from 'class-validator';
-import { plainToInstance, Transform, Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { CreateOrderItemDto } from './create-order-item.dto';
 import { PolicyAcceptedTransform } from '../../common/policy-accepted.transform';
+import { parseJsonFormArrayOf } from 'src/common/json-form-field';
 
 export class CreateOrderDto {
   @IsString()
@@ -41,18 +42,9 @@ export class CreateOrderDto {
   })
   policyAccepted!: boolean;
 
-  @Transform(({ value }) => {
-    if (typeof value !== 'string') return value;
-    try {
-      const parsed = JSON.parse(value);
-      if (!Array.isArray(parsed)) return parsed;
-      return parsed.map((item: any) =>
-        plainToInstance(CreateOrderItemDto, item),
-      );
-    } catch {
-      return value;
-    }
-  })
+  @Transform(({ value }: { value: unknown }) =>
+    parseJsonFormArrayOf(CreateOrderItemDto, value),
+  )
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateOrderItemDto)

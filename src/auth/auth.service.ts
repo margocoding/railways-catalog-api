@@ -1,4 +1,10 @@
-import { Injectable, OnModuleInit, UnauthorizedException, ConflictException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  UnauthorizedException,
+  ConflictException,
+  Logger,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'prisma/prisma.service';
 import { fillDto } from 'utils/fill-dto';
@@ -8,6 +14,7 @@ import { ChangeUsernameDto } from './dto/change-username.dto';
 import { AuthTokenRdo } from './rdo/auth-token.rdo';
 import { UserRdo } from './rdo/user.rdo';
 import * as bcrypt from 'bcrypt';
+import type { User } from 'generated/prisma/client';
 
 const DEFAULT_USERNAME = 'admin';
 const DEFAULT_PASSWORD = 'admin';
@@ -47,7 +54,7 @@ export class AuthService implements OnModuleInit {
     this.logger.log(`Создан пользователь по умолчанию: ${DEFAULT_USERNAME}`);
   }
 
-  private mapUserToDto(user: any) {
+  private mapUserToDto(user: User) {
     return {
       id: user.id,
       username: user.username,
@@ -57,7 +64,7 @@ export class AuthService implements OnModuleInit {
     };
   }
 
-  private async generateToken(user: any): Promise<string> {
+  private async generateToken(user: User): Promise<string> {
     const payload = { sub: user.id, username: user.username, role: user.role };
     return this.jwtService.signAsync(payload);
   }
@@ -85,7 +92,10 @@ export class AuthService implements OnModuleInit {
     });
   }
 
-  async changePassword(userId: string, dto: ChangePasswordDto): Promise<UserRdo> {
+  async changePassword(
+    userId: string,
+    dto: ChangePasswordDto,
+  ): Promise<UserRdo> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -94,7 +104,10 @@ export class AuthService implements OnModuleInit {
       throw new UnauthorizedException('Пользователь не найден');
     }
 
-    const isPasswordValid = await bcrypt.compare(dto.currentPassword, user.password);
+    const isPasswordValid = await bcrypt.compare(
+      dto.currentPassword,
+      user.password,
+    );
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Текущий пароль неверен');
@@ -110,7 +123,10 @@ export class AuthService implements OnModuleInit {
     return fillDto(UserRdo, this.mapUserToDto(updatedUser));
   }
 
-  async changeUsername(userId: string, dto: ChangeUsernameDto): Promise<UserRdo> {
+  async changeUsername(
+    userId: string,
+    dto: ChangeUsernameDto,
+  ): Promise<UserRdo> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -119,7 +135,10 @@ export class AuthService implements OnModuleInit {
       throw new UnauthorizedException('Пользователь не найден');
     }
 
-    const isPasswordValid = await bcrypt.compare(dto.currentPassword, user.password);
+    const isPasswordValid = await bcrypt.compare(
+      dto.currentPassword,
+      user.password,
+    );
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Текущий пароль неверен');
@@ -130,7 +149,9 @@ export class AuthService implements OnModuleInit {
     });
 
     if (existingUser) {
-      throw new ConflictException('Пользователь с таким логином уже существует');
+      throw new ConflictException(
+        'Пользователь с таким логином уже существует',
+      );
     }
 
     const updatedUser = await this.prisma.user.update({

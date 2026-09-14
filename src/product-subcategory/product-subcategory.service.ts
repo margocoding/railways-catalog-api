@@ -3,30 +3,35 @@ import { PrismaService } from 'prisma/prisma.service';
 import { PaginationDto } from 'utils/dto/pagination.dto';
 import { buildPagination } from 'utils/build-pagination.util';
 import { fillDto } from 'utils/fill-dto';
-import { mapFilterOptionToPrisma } from 'utils/mappers/filter-option.mapper';
+import {
+  mapFilterOptionToPrisma,
+  mapFilterOptionToRdo,
+} from 'utils/mappers/filter-option.mapper';
 import { CreateSubcategoryDto } from './dto/create-subcategory.dto';
 import { UpdateSubcategoryDto } from './dto/update-subcategory.dto';
 import { SubcategoryRdo } from './rdo/subcategory.rdo';
 import { SubcategoriesRdo } from './rdo/subcategories.rdo';
+import type {
+  Category,
+  FilterOption,
+  Prisma,
+  Subcategory,
+} from 'generated/prisma/client';
 
 @Injectable()
 export class ProductSubcategoryService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private mapSubcategoryToDto(s: any) {
+  private mapSubcategoryToDto(
+    s: Subcategory & { category?: Category | null; filters?: FilterOption[] },
+  ) {
     return {
       id: s.id,
       name: s.name,
       slug: s.slug,
       categoryId: s.categoryId,
       categorySlug: s.category?.slug,
-      filters:
-        s.filters?.map((f: any) => ({
-          key: f.key,
-          label: f.label,
-          type: f.type?.toLowerCase() as 'select' | 'range',
-          options: f.options as any,
-        })) ?? [],
+      filters: s.filters?.map(mapFilterOptionToRdo) ?? [],
     };
   }
 
@@ -86,10 +91,7 @@ export class ProductSubcategoryService {
     return fillDto(SubcategoryRdo, this.mapSubcategoryToDto(subcategory));
   }
 
-  async update(
-    id: string,
-    dto: UpdateSubcategoryDto,
-  ): Promise<SubcategoryRdo> {
+  async update(id: string, dto: UpdateSubcategoryDto): Promise<SubcategoryRdo> {
     const existing = await this.prisma.subcategory.findUnique({
       where: { id },
     });
@@ -98,11 +100,13 @@ export class ProductSubcategoryService {
       throw new NotFoundException('Subcategory not found');
     }
 
-    const data: any = { ...dto };
+    // categorySlug и filters — поля формы, а не колонки: в Prisma уходят только связи через connect/create.
+    const { categorySlug, filters, ...fields } = dto;
+    const data: Prisma.SubcategoryUpdateInput = { ...fields };
 
-    if (dto.categorySlug) {
+    if (categorySlug) {
       const category = await this.prisma.category.findUnique({
-        where: { slug: dto.categorySlug },
+        where: { slug: categorySlug },
       });
 
       if (!category) {
@@ -112,13 +116,13 @@ export class ProductSubcategoryService {
       data.category = { connect: { id: category.id } };
     }
 
-    if (dto.filters) {
+    if (filters) {
       await this.prisma.filterOption.deleteMany({
         where: { subcategoryId: id },
       });
 
       data.filters = {
-        create: dto.filters.map(mapFilterOptionToPrisma),
+        create: filters.map(mapFilterOptionToPrisma),
       };
     }
 

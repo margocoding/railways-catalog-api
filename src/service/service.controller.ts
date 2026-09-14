@@ -1,19 +1,18 @@
 import {
-    Body,
-    Controller,
-    Delete,
-    Get,
-    HttpCode,
-    Param,
-    Post,
-    Put,
-    Query,
-    UploadedFile,
-    UploadedFiles,
-    UseGuards,
-    UseInterceptors,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Put,
+  Query,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { FindServicesDto } from './dto/find-services.dto';

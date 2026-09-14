@@ -8,15 +8,15 @@ export class FindRequestsDto extends PaginationDto {
   @IsOptional()
   @IsString()
   search?: string;
-  
+
   @IsOptional()
   @IsString()
   serviceId?: string;
-  
+
   @IsOptional()
   @IsString()
   productId?: string;
-  
+
   @IsOptional()
   @IsIn(REQUEST_SORT_VALUES)
   sort?: RequestSort;

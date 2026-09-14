@@ -5,7 +5,7 @@ export class UpdateOrderDto {
   @IsOptional()
   @IsIn(ORDER_STATUS_VALUES)
   status?: OrderStatusQuery;
-  
+
   @IsOptional()
   @IsString()
   comment?: string;

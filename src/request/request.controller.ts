@@ -52,11 +52,14 @@ export class RequestController {
             'application/vnd.ms-excel',
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           ];
-          
+
           if (allowedMimeTypes.includes(file.mimetype)) {
             cb(null, true);
           } else {
-            cb(new Error('Разрешены только файлы PDF, DOC, DOCX, XLS, XLSX'), false);
+            cb(
+              new Error('Разрешены только файлы PDF, DOC, DOCX, XLS, XLSX'),
+              false,
+            );
           }
         },
       },
@@ -64,7 +67,11 @@ export class RequestController {
   )
   create(
     @Body() dto: CreateRequestDto,
-    @UploadedFiles() files: { requestFile?: Express.Multer.File[]; partnerMapFile?: Express.Multer.File[] },
+    @UploadedFiles()
+    files: {
+      requestFile?: Express.Multer.File[];
+      partnerMapFile?: Express.Multer.File[];
+    },
   ) {
     return this.service.create(
       dto,

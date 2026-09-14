@@ -7,12 +7,28 @@ import { PrismaService } from 'prisma/prisma.service';
 import { PaginationDto } from 'utils/dto/pagination.dto';
 import { buildPagination } from 'utils/build-pagination.util';
 import { fillDto } from 'utils/fill-dto';
-import { mapFilterOptionToPrisma } from 'utils/mappers/filter-option.mapper';
+import {
+  mapFilterOptionToPrisma,
+  mapFilterOptionToRdo,
+} from 'utils/mappers/filter-option.mapper';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CategoryRdo } from './rdo/category.rdo';
 import { CategoriesRdo } from './rdo/categories.rdo';
 import { FileService } from 'src/file/file.service';
+import type {
+  Category,
+  FilterOption,
+  Prisma,
+  Subcategory,
+} from 'generated/prisma/client';
+
+/** Категория в том составе, в каком её достают разные методы: счётчик товаров есть не везде. */
+type CategoryForRdo = Category & {
+  _count?: { products: number };
+  filters?: FilterOption[];
+  subcategories?: (Subcategory & { filters?: FilterOption[] })[];
+};
 
 @Injectable()
 export class ProductCategoryService {
@@ -21,7 +37,7 @@ export class ProductCategoryService {
     private readonly fileService: FileService,
   ) {}
 
-  private mapCategoryToDto(c: any) {
+  private mapCategoryToDto(c: CategoryForRdo) {
     return {
       id: c.id,
       name: c.name,
@@ -30,27 +46,15 @@ export class ProductCategoryService {
       image: c.image,
       position: c.position,
       productCount: c._count?.products,
-      filters:
-        c.filters?.map((f: any) => ({
-          key: f.key,
-          label: f.label,
-          type: f.type?.toLowerCase() as 'select' | 'range',
-          options: f.options as any,
-        })) ?? [],
+      filters: c.filters?.map(mapFilterOptionToRdo) ?? [],
       subcategories:
-        c.subcategories?.map((s: any) => ({
+        c.subcategories?.map((s) => ({
           id: s.id,
           name: s.name,
           slug: s.slug,
           categoryId: s.categoryId,
           categorySlug: c.slug,
-          filters:
-            s.filters?.map((f: any) => ({
-              key: f.key,
-              label: f.label,
-              type: f.type?.toLowerCase() as 'select' | 'range',
-              options: f.options as any,
-            })) ?? [],
+          filters: s.filters?.map(mapFilterOptionToRdo) ?? [],
         })) ?? [],
     };
   }
@@ -104,7 +108,7 @@ export class ProductCategoryService {
     dto: CreateCategoryDto,
     file: Express.Multer.File,
   ): Promise<CategoryRdo> {
-    let imagePath: string = await this.fileService.saveFile(file);
+    const imagePath: string = await this.fileService.saveFile(file);
 
     // Новая категория встаёт в конец списка, а не в середину по алфавиту.
     const last = await this.prisma.category.aggregate({
@@ -145,20 +149,21 @@ export class ProductCategoryService {
       throw new NotFoundException('Category not found');
     }
 
-    const data: any = { ...dto };
+    const { filters, ...fields } = dto;
+    const data: Prisma.CategoryUpdateInput = { ...fields };
 
     if (file) {
       await this.fileService.deleteFile(existing.image);
       data.image = await this.fileService.saveFile(file);
     }
 
-    if (dto.filters) {
+    if (filters) {
       await this.prisma.filterOption.deleteMany({
         where: { categoryId: id },
       });
 
       data.filters = {
-        create: dto.filters.map(mapFilterOptionToPrisma),
+        create: filters.map(mapFilterOptionToPrisma),
       };
     }
 

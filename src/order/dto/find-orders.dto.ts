@@ -17,11 +17,11 @@ export class FindOrdersDto extends PaginationDto {
   @IsOptional()
   @IsString()
   search?: string;
-  
+
   @IsOptional()
   @IsIn(ORDER_STATUS_VALUES)
   status?: OrderStatusQuery;
-  
+
   @IsOptional()
   @IsIn(ORDER_SORT_VALUES)
   sort?: OrderSort;

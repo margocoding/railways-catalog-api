@@ -6,7 +6,7 @@ export class ServicesRdo {
   @Expose()
   @Type(() => ServiceRdo)
   items!: ServiceRdo[];
-  
+
   @Expose()
   @Type(() => PaginationRdo)
   pagination!: PaginationRdo;

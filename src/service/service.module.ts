@@ -7,6 +7,6 @@ import { FileModule } from 'src/file/file.module';
 @Module({
   imports: [PrismaModule, FileModule],
   providers: [ServiceService],
-  controllers: [ServiceController]
+  controllers: [ServiceController],
 })
 export class ServiceModule {}
