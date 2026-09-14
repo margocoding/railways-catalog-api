@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import { fillDto } from 'utils/fill-dto';
 import { DashboardStatsRdo } from './rdo/dashboard-stats.rdo';
+import type { Prisma } from 'generated/prisma/client';
 
 const LOW_STOCK_THRESHOLD = 5;
 const RECENT_LIMIT = 5;
@@ -23,7 +24,18 @@ export class StatsService {
     return { start, end };
   }
 
-  private mapOrder(o: any) {
+  private mapOrder(
+    o: Prisma.OrderGetPayload<{
+      select: {
+        id: true;
+        orderNumber: true;
+        name: true;
+        totalAmount: true;
+        status: true;
+        createdAt: true;
+      };
+    }>,
+  ) {
     return {
       id: o.id,
       orderNumber: o.orderNumber,
@@ -34,7 +46,11 @@ export class StatsService {
     };
   }
 
-  private mapRequest(r: any) {
+  private mapRequest(
+    r: Prisma.RequestGetPayload<{
+      include: { service: { select: { title: true } } };
+    }>,
+  ) {
     return {
       id: r.id,
       name: r.name,

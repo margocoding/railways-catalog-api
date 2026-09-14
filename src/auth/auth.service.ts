@@ -14,6 +14,7 @@ import { ChangeUsernameDto } from './dto/change-username.dto';
 import { AuthTokenRdo } from './rdo/auth-token.rdo';
 import { UserRdo } from './rdo/user.rdo';
 import * as bcrypt from 'bcrypt';
+import type { User } from 'generated/prisma/client';
 
 const DEFAULT_USERNAME = 'admin';
 const DEFAULT_PASSWORD = 'admin';
@@ -53,7 +54,7 @@ export class AuthService implements OnModuleInit {
     this.logger.log(`Создан пользователь по умолчанию: ${DEFAULT_USERNAME}`);
   }
 
-  private mapUserToDto(user: any) {
+  private mapUserToDto(user: User) {
     return {
       id: user.id,
       username: user.username,
@@ -63,7 +64,7 @@ export class AuthService implements OnModuleInit {
     };
   }
 
-  private async generateToken(user: any): Promise<string> {
+  private async generateToken(user: User): Promise<string> {
     const payload = { sub: user.id, username: user.username, role: user.role };
     return this.jwtService.signAsync(payload);
   }
