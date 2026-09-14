@@ -8,17 +8,11 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
+import { parseJsonFormField } from 'src/common/json-form-field';
 
 export class UpdateProductDto extends PartialType(CreateProductDto) {
   // Omitted: keep current images. Empty array: explicitly remove all current images.
-  @Transform(({ value }) => {
-    if (typeof value !== 'string') return value;
-    try {
-      return JSON.parse(value);
-    } catch {
-      return value;
-    }
-  })
+  @Transform(({ value }: { value: unknown }) => parseJsonFormField(value))
   @IsOptional()
   @IsArray()
   @ArrayUnique()

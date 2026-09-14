@@ -1,5 +1,6 @@
 import { Transform } from 'class-transformer';
 import { IsString, IsOptional, IsArray } from 'class-validator';
+import { parseJsonFormField } from 'src/common/json-form-field';
 
 export class CreateServiceDto {
   @IsString()
@@ -15,14 +16,7 @@ export class CreateServiceDto {
   @IsString()
   fullDescription?: string;
 
-  @Transform(({ value }) => {
-    if (typeof value !== 'string') return value;
-    try {
-      return JSON.parse(value);
-    } catch {
-      return value;
-    }
-  })
+  @Transform(({ value }: { value: unknown }) => parseJsonFormField(value))
   @IsOptional()
   @IsArray()
   @IsString({ each: true })

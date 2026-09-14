@@ -7,7 +7,11 @@ import {
   IsIn,
   Min,
 } from 'class-validator';
-import { Transform, Type, plainToInstance } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
+import {
+  parseJsonFormArrayOf,
+  parseJsonFormField,
+} from 'src/common/json-form-field';
 
 export class CreateProductSpecDto {
   @IsString()
@@ -18,7 +22,7 @@ export class CreateProductSpecDto {
   unit?: string;
 
   @IsOptional()
-  @Transform(({ value }) => {
+  @Transform(({ value }: { value: unknown }) => {
     const num = Number(value);
     return !isNaN(num) && String(value).trim() !== '' ? num : value;
   })
@@ -70,32 +74,16 @@ export class CreateProductDto {
   @IsString()
   descriptionTags?: string;
 
-  @Transform(({ value }) => {
-    if (typeof value !== 'string') return value;
-    try {
-      const parsed = JSON.parse(value);
-      if (!Array.isArray(parsed)) return parsed;
-      return parsed.map((item: any) =>
-        plainToInstance(CreateProductSpecDto, item),
-      );
-    } catch {
-      return value;
-    }
-  })
+  @Transform(({ value }: { value: unknown }) =>
+    parseJsonFormArrayOf(CreateProductSpecDto, value),
+  )
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateProductSpecDto)
   specs?: CreateProductSpecDto[];
 
-  @Transform(({ value }) => {
-    if (typeof value !== 'string') return value;
-    try {
-      return JSON.parse(value);
-    } catch {
-      return value;
-    }
-  })
+  @Transform(({ value }: { value: unknown }) => parseJsonFormField(value))
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
