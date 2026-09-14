@@ -104,7 +104,7 @@ export class ProductCategoryService {
     dto: CreateCategoryDto,
     file: Express.Multer.File,
   ): Promise<CategoryRdo> {
-    let imagePath: string = await this.fileService.saveFile(file);
+    const imagePath: string = await this.fileService.saveFile(file);
 
     // Новая категория встаёт в конец списка, а не в середину по алфавиту.
     const last = await this.prisma.category.aggregate({
