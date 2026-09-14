@@ -11,12 +11,15 @@ import { FindOrdersDto, OrderSort } from './dto/find-orders.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { OrdersRdo } from './rdo/orders.rdo';
 import { OrderRdo } from './rdo/order.rdo';
+import type { Prisma } from 'generated/prisma/client';
+
+type OrderWithItems = Prisma.OrderGetPayload<{ include: { items: true } }>;
 
 @Injectable()
 export class OrderService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private mapOrderToDto(o: any) {
+  private mapOrderToDto(o: OrderWithItems) {
     return {
       id: o.id,
       orderNumber: o.orderNumber,
@@ -28,7 +31,7 @@ export class OrderService {
       policyAccepted: o.policyAccepted,
       status: o.status,
       totalAmount: o.totalAmount,
-      items: (o.items ?? []).map((item: any) => ({
+      items: o.items.map((item) => ({
         id: item.id,
         quantity: item.quantity,
         price: item.price,
@@ -45,7 +48,7 @@ export class OrderService {
     };
   }
 
-  private buildOrderBy(sort?: OrderSort): any {
+  private buildOrderBy(sort?: OrderSort): Prisma.OrderOrderByWithRelationInput {
     switch (sort) {
       case 'oldest':
         return { createdAt: 'asc' };
@@ -55,8 +58,8 @@ export class OrderService {
     }
   }
 
-  private buildWhere(query: FindOrdersDto): any {
-    const where: any = {};
+  private buildWhere(query: FindOrdersDto): Prisma.OrderWhereInput {
+    const where: Prisma.OrderWhereInput = {};
 
     if (query.status) {
       where.status = query.status;
@@ -216,7 +219,7 @@ export class OrderService {
       throw new NotFoundException('Order not found');
     }
 
-    const data: any = {};
+    const data: Prisma.OrderUpdateInput = {};
 
     if (dto.status !== undefined) {
       data.status = dto.status;
